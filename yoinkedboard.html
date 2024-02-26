@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOINKEDBOARD</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>YOINKEDBOARD</h1>
+        <p class="text-center">See below for the top 10 most Yoinked $YOINK holders!</p>
+
+        <container class="text-center">
+            <h6><a href="https://yoinkxrpl.github.io/" target="_blank">Home Page</a> - 
+                <a href="yoinkboard.html">YoinkBoard</a> - 
+                <a href="ratiocalculator.html">Ratio / Wallet Checker</a>
+            </h6>
+        </container>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Address</th>
+                    <th>Yoinked (times yoinked)</th>
+                    <th>Amount Yoinked (in $YOINK)</th>
+                    <th>Yoinks (times being the Yoinker)</th>
+                    <th>Total Yoinks Value (in $YOINK)</th>
+
+                </tr>
+            </thead>
+            <tbody id="data-table">
+                <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script>
+        $(document).ready(async function() {
+            // Example JSON data, replace with your dynamic data source
+            var jsonData = await $.getJSON("https://yoinkboard-default-rtdb.firebaseio.com/Yoinkers.json?orderBy=%22yoinked%22&limitToLast=10")
+
+            // Function to sort data by 'yoinks'
+            function sortData(data) {
+                return Object.entries(data).sort((a, b) => b[1].yoinked - a[1].yoinked);
+            }
+
+            // Function to populate the table with sorted data
+            function populateTable(data) {
+                var sortedData = sortData(data);
+                var tableBody = $('#data-table');
+                tableBody.empty(); // Clear existing data
+
+                $.each(sortedData, function(index, value) {
+                    var row = `<tr>
+                        <td>${value[0]}</td>
+                        <td>${value[1].yoinked}</td>
+                        <td>${value[1].totalYoinkedFrom.toFixed(2)}</td>
+                        <td>${value[1].yoinks}</td>
+                        <td>${value[1].totalYoinked.toFixed(2)}</td>
+                    </tr>`;
+                    tableBody.append(row);
+                });
+            }
+
+            // Call `populateTable` with your JSON data
+            populateTable(jsonData);
+        });
+    </script>
+</body>
+</html>
