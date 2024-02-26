@@ -111,6 +111,10 @@
             var text = `Your Weighted Chance is: ${weightedRatio}<br>
             This is based on your holdings of:<br> ${yoinkBal} $YOINK<br>
             ${yeetBal} $YEET`
+            if (yoinkBal == 0 && yeetBal ==0){
+                text+= `<br>
+                If you have holdings, but it shows as 0 here, it may be if you have purchased from a DEX but not set the Trustline.`
+            }
             
             document.getElementById('resultArea').innerHTML = text;
 
