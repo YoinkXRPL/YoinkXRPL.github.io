@@ -100,6 +100,19 @@
                     
                 }
 
+                
+            var latestLedger = await $.getJSON("https://yoinkboard-default-rtdb.firebaseio.com/LatestLedger.json")
+
+            var tradePower = 0;
+            console.log(latestLedger);
+            try{
+                document.getElementById('resultArea').innerHTML = 'Querying the ledger to find your trade Power.. this could take some time..';
+            tradePower = await getOfferHistory(xClient, address, latestLedger)
+
+            }catch{
+
+            }
+
             var weightedRatio = 1;
             if (yoinkBal != 0 && yeetBal !=0){
                 yoinkBal = Number(yoinkBal);
@@ -111,13 +124,18 @@
                 }
             }
 
-            var text = `Your Weighted Chance is: ${weightedRatio}<br>
+            var text = `Your Weighted Chance to be YOINKED is: ${weightedRatio}<br>
             This is based on your holdings of:<br> ${yoinkBal} $YOINK<br>
             ${yeetBal} $YEET`
             if (yoinkBal == 0 && yeetBal ==0){
                 text+= `<br>
                 If you have holdings, but it shows as 0 here, it may be if you have purchased from a DEX but not set the Trustline.`
             }
+
+            text += `<br><br>
+            Your HODL Power is: ${Math.sqrt(yoinkBal)}<br>
+            Your Trade Power is: ${tradePower} (resets at next YOINKING)<br>
+            These influence how likely it is for YOU to become the YOINKER`
             
             document.getElementById('resultArea').innerHTML = text;
 
@@ -135,6 +153,111 @@
 
             document.getElementById('searchButton').disabled = false;
         }
+
+        async function getOfferHistory (client, address, ledgerMin = -1) {
+	
+                    var returnValue = 0;//tradepower
+        
+                var lastLedger = -1;
+        
+            const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+        
+            var txs = await client.request({
+                "command": "account_tx",
+                "account": address,
+                "limit": 400,
+                "ledger_index_max": -1,
+                "ledger_index_min": ledgerMin
+            })
+        
+            var NewLines = txs.result.transactions
+            var PlaceMarker = txs.result.marker
+        
+            for (c = 0; c < NewLines.length; c++) {
+                
+            //console.log(NewLines[c].tx); return;
+            if (NewLines[c].tx.ledger_index> lastLedger)lastLedger = NewLines[c].tx.ledger_index;
+            
+            if (NewLines[c].tx.TransactionType == "OfferCreate") {          
+        
+        
+                    var result = {};
+                    result.result = NewLines[c];
+                    //check it was a successful transaction
+                    if (result.result.meta.TransactionResult != "tesSUCCESS") {
+                        //console.log(`MINTING FAILED`)
+                        continue
+                    }
+        
+            var balanceChanges = xrpl.getBalanceChanges(result.result.meta)
+        
+            for (let i=0; i < balanceChanges.length; i++){
+                if (balanceChanges[i].account == address){
+                for (let j =0;j< balanceChanges[i].balances.length;j++){
+                    if ((balanceChanges[i].balances[j].issuer == "rYNKrtQaf3vUVWVK5sw9rJdPGDLbxZu89" || balanceChanges[i].balances[j].issuer == "rYTrMEEyPhhVPStnmrRTaW7AFNw4HSuZB") && Number(balanceChanges[i].balances[j].value) > 0){
+                    
+                        returnValue += Number(balanceChanges[i].balances[j].value)
+                    }
+                }
+                }
+            }
+                
+                    
+                }
+            }
+        
+        //    console.log(payments);
+        
+            while (PlaceMarker != null) {
+                await delay(200);
+        
+                var txs = await client.request({
+                    "command": "account_tx",
+                    "account": address,
+                    "limit": 400,
+                    "ledger_index_max": -1,
+                    "ledger_index_min": ledgerMin,
+                    "marker": PlaceMarker
+                })
+        
+                var NewLines = txs.result.transactions
+                var PlaceMarker = txs.result.marker
+        
+                for (c = 0; c < NewLines.length; c++) {
+                if (NewLines[c].tx.ledger_index> lastLedger)lastLedger = NewLines[c].tx.ledger_index;
+            
+                if (NewLines[c].tx.TransactionType == "OfferCreate") {          
+            
+            
+                        var result = {};
+                        result.result = NewLines[c];
+                        //check it was a successful transaction
+                        if (result.result.meta.TransactionResult != "tesSUCCESS") {
+                            continue
+                        }
+        
+                        
+            var balanceChanges = xrpl.getBalanceChanges(result.result.meta)
+                        
+                        for (let i=0; i < balanceChanges.length; i++){
+                        
+                            if (balanceChanges[i].account == address){
+                            for (let j =0;j< balanceChanges[i].balances.length;j++){
+                                if ((balanceChanges[i].balances[j].issuer == "rYNKrtQaf3vUVWVK5sw9rJdPGDLbxZu89" || balanceChanges[i].balances[j].issuer == "rYTrMEEyPhhVPStnmrRTaW7AFNw4HSuZB") && Number(balanceChanges[i].balances[j].value) > 0){
+                    
+                    returnValue += Number(balanceChanges[i].balances[j].value)
+                }
+                            }
+                        }
+                        }
+            }
+    }
+  }
+  
+  
+  return returnValue;
+  }
+
 
     </script>
 </body>
